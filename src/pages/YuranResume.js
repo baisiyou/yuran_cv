@@ -1,6 +1,123 @@
 import "./YuranResume.css";
 
+import * as datefns from 'date-fns';
+import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 const YuranResume = () => {
+  const [quoteData, setQuoteData] = useState({});
+  const [tempInCelsius, setTempInCelsius] = useState(null);
+  const [formattedAddress, setFormattedAddress] = useState('');
+  const [geoData, setGeoData] = useState(null);
+  const [weatherData, setWeatherData] = useState(null);
+  const [dateTime, setDateTime] = useState(null);
+  /* const[quoteData,setQuoteData]=useState({});
+  const[tempInCelius,setTemInCelius]=useState(null); */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch quotes from the API
+        const quotesResponse = await axios.get('https://dummyjson.com/quotes');
+        // Assuming the first quote in the response
+        const fetchedQuoteData = quotesResponse.data.quotes[0];
+        setQuoteData(fetchedQuoteData);
+
+        // Fetch temperature from OpenWeatherMap API
+        const weatherResponse = await axios.get(
+          `https://api.openweathermap.org/data/2.5/weather?q=Brossard&appid=1691c37009f5ba8b8a957b31b9655570`
+        );
+
+        const tempInKelvin = weatherResponse.data.main.temp;
+        const calculatedTempInCelsius = Math.round(tempInKelvin - 273.15);
+        setTempInCelsius(calculatedTempInCelsius);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    const fetchFormattedAddress = async () => {
+      const options = {
+        method: 'GET',
+        url: 'https://google-maps-geocoding.p.rapidapi.com/geocode/json',
+        params: {
+          latlng: '40.714224,-73.96145',
+          language: 'en',
+        },
+        headers: {
+          'X-RapidAPI-Key': '372e4bf1dfmshb6594fcde380071p16d4f8jsn1c51b5429090',
+          'X-RapidAPI-Host': 'google-maps-geocoding.p.rapidapi.com',
+        },
+      };
+
+      let fetchedFormattedAddress = '';
+
+      try {
+        const response = await axios.request(options);
+
+        if (response.data.results && response.data.results.length > 0) {
+          fetchedFormattedAddress = response.data.results[0].formatted_address;
+          setFormattedAddress(fetchedFormattedAddress);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    const fetchWeatherAndAddress = async () => {
+      let address = null;
+      const apiKey = '4c5de634bf34e3';
+      if (process.env.REACT_APP_X_REAL_IP === undefined) {
+        address = `https://ipinfo.io/json?token=${apiKey}`;
+      } else {
+        address = `https://ipinfo.io/${process.env.REACT_APP_X_REAL_IP}/json?token=${apiKey}`;
+      }
+
+      try {
+        const geoResponse = await fetch(address);
+        const geoData = await geoResponse.json();
+        setGeoData(geoData);
+        const weatherApiKey = '1691c37009f5ba8b8a957b31b9655570';
+        const weatherResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?q=${geoData.city},${geoData.country}&appid=${weatherApiKey}`
+        );
+        const weatherData = await weatherResponse.json();
+        setWeatherData(weatherData);
+
+        const timezone = weatherData.timezone * 1000;
+        const offset = new Date().getTimezoneOffset() * 60 * 1000;
+        const localTime = new Date().getTime();
+        const utc = localTime + offset;
+        const targetDate = new Date(utc + timezone);
+        setDateTime(datefns.format(targetDate, 'd MMM   HH:mm aaa'));
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchData();
+    fetchFormattedAddress();
+    fetchWeatherAndAddress();
+  }, []);
+  
+    if (!dateTime || !geoData || !weatherData) {
+      // Loading state or error handling
+      return <div>Loading...</div>;
+    }
+  
+    const weatherDataToSend = {
+      title: 'Weather',
+      dateTime: dateTime,
+      city: geoData.city,
+      country: geoData.country,
+      icon: weatherData.weather[0].icon,
+      description: weatherData.weather[0].description,
+      main: weatherData.weather[0].main,
+      temp: Math.round(weatherData.main.temp - 273.15),
+      feels_like: Math.round(weatherData.main.feels_like - 273.15),
+      humidity: `${weatherData.main.humidity}%`,
+      wind: weatherData.wind.speed,
+      visibility: weatherData.visibility,
+      pressure: weatherData.main.pressure,
+    };
   return (
     <div className="yuran-resume">
       <div className="rectangle" />
@@ -102,24 +219,24 @@ const YuranResume = () => {
       <div className="email-me">Email me</div>
       <div className="div">.</div>
       <div className="implement-a-dynamic">
-        Implement a dynamic data visualization feature for a data analytics
-        dashboard.
+      <p><h3>{quoteData.quote}</h3>
+        <h3>Author: {quoteData.author}</h3></p>
       </div>
-      <div className="visit-website">Visit Website</div>
+      <div className="visit-website"></div>
       <div className="build-a-scalable">
-        Build a scalable database architecture for a content management system.
+      <p>Temperature in Celsius: {tempInCelsius}</p>
+      <p>City: Brossard</p>
       </div>
-      <div className="visit-website1">Visit Website</div>
+      <div className="visit-website1">Weather</div>
       <div className="enhance-the-user">
-        Enhance the user interaction on a blogging website by introducing
-        real-time comments.
+      <p>Formatted Address: {formattedAddress}</p>
       </div>
-      <div className="visit-website2">Visit Website</div>
+      <div className="visit-website2">Address</div>
       <div className="establish-a-seamless">
-        Establish a seamless integration with third-party APIs for a weather
-        application.
+      <h1>{weatherDataToSend.city}</h1>
+      <p>{weatherDataToSend.description}</p>
       </div>
-      <div className="visit-website3">Visit Website</div>
+      <div className="visit-website3">City</div>
       <div className="implement-a-responsive">
         {" "}
         Implement a responsive design for the user interface of a new e-commerce
